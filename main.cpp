@@ -22,8 +22,8 @@ string printGrid() { //To get readable string and not memory value
     return printableGrid;
 }
 
-vector<pair<int,int> > getPossibilities() {
-    vector<pair<int, int> > possibilities;
+vector<pair<int,int>> getPossibilities() {
+    vector<pair<int, int>> possibilities;
     for (int row = 0; row < 3; row++) {
         for (int i = 0; i < 3; i++) {
             if (grid[row][i] == 0) {
@@ -62,45 +62,36 @@ vector<int> checkForBlock(pair<int, int> currentPossibility, int currentGrid[3][
     return {0};
 }
 
-vector<pair<int, int>> search(int depth, vector<pair<int,int>> possibilities,int currentGrid[3][3], int turnNum, vector<pair<int, int>> existingMoves) {
-    
-    vector<pair<int, int>> moves = existingMoves;
+int evaluateMove(int grid[3][3], pair<int,int> currentMove) {
 
-    for (int i = 0; i < possibilities.size(); i++) {
-        //Step 1, check for available block/win
-        vector<int> block = checkForBlock(possibilities[i],currentGrid, turnNum);
-        if (block[0] == 1) { //If block or win possible
-            moves.push_back({block[1],block[2]});
-            return moves;
-        } else {
-            moves.push_back(possibilities[i]);
-        }
-    }
-    if (depth > 1){search(depth-1,possibilities,currentGrid,1,moves);} else {return moves;}
 }
 
-pair<int, int> initSearch(int depth) {
-    vector<pair<int,int>> possibilities = getPossibilities();
-    int turnNum = 2; //Used when in depth
-    vector<pair<int, int>> bestMoves; //List of all the moves that won't make the bot lose
-    
-    int temp[3][3] = {{},{},{}};
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            temp[i][j] = grid[i][j];
-        }
+int miniMax(int depth, vector<pair<int,int>> possibilities, bool maximizingPlayer) {
+    if (depth == 0 or possibilities.size() == 0) {
+        return;
     }
-    
-    vector<pair<int, int>> moves = search(2,possibilities,temp,2,{});
-    srand(time(nullptr));
-    return moves[rand()%possibilities.size()]; //Pick random move from acceptable moves
+    if  (maximizingPlayer) { //If bots's turn => take highest value (best move for himself)
+        int maxEval = -1000000; //-1 million
+        for (int i = 0; i < possibilities.size(); i++) {
+            int eval = miniMax(depth - 1, possibilities, false);
+            maxEval = max(maxEval, eval);
+        }
+        return maxEval;
+    } else { //If player's turn => takes lowest value (best move for opponent)
+        int minEval = +1000000; //+1 million
+        for (int i = 0; possibilities.size(); i++) {
+            int eval = miniMax(depth - 1, possibilities, true);
+            minEval = min(minEval, eval);
+        }
+        return minEval;
+    }
 }
 
 void botTurn() {
     //cout << "Num of possibilities: " << botPossibilities.size() << endl;
     //cout << endl << "INDEX : " << index << endl << "COORDINATES: " << botPossibilities[index].first << ", " << botPossibilities[index].second << endl;
-    pair<int, int> chosenCoordinates = initSearch(2);
-    grid[chosenCoordinates.first][chosenCoordinates.second] = 2;
+    //pair<int, int> chosenCoordinates = initSearch(2);
+    //grid[chosenCoordinates.first][chosenCoordinates.second] = 2;
 }
 
 void playerTurn(){ //Handle out of range and already used spaces
