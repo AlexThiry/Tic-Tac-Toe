@@ -62,8 +62,15 @@ vector<int> checkForBlock(pair<int, int> currentPossibility, int currentGrid[3][
     return {0};
 }
 
-int evaluateMove(int grid[3][3], pair<int,int> currentMove) {
+int evaluateMove(int grid[3][3], pair<int,int> currentMove, bool maximizingPlayer) {
+    int score = 0;
+    int playerInFavor;
+    int coeff = 1;
+    if (maximizingPlayer) {playerInFavor = 1;} else {playerInFavor = 2; coeff = -1;}
+    if (checkForWin(grid) == playerInFavor) {score = 100;}
+    //2 in row = 10 and 1 in line = 1 else 0
 
+    return score * coeff;
 }
 
 int miniMax(int depth, vector<pair<int,int>> possibilities, bool maximizingPlayer) {
