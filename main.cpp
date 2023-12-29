@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <utility>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -22,7 +23,7 @@ string printGrid() { //To get readable string and not memory value
     return printableGrid;
 }
 
-vector<pair<int,int>> getPossibilities() {
+vector<pair<int,int>> getPossibilities(int grid[3][3]) {
     vector<pair<int, int>> possibilities;
     for (int row = 0; row < 3; row++) {
         for (int i = 0; i < 3; i++) {
@@ -48,63 +49,95 @@ int checkForWin(int grid[3][3]) { //Returns 0 for no one wins, 1 for X wins, 2 f
         //Cross win
         return grid[1][1];
     }
-    if (getPossibilities().empty()) { //Check for tie
+    if (getPossibilities(grid).empty()) { //Check for tie
         return 3;
     }
     return 0;
 }
 
-vector<int> checkForBlock(pair<int, int> currentPossibility, int currentGrid[3][3], int turnNum) {
-    currentGrid[currentPossibility.first][currentPossibility.second] = turnNum;
-    if (checkForWin(currentGrid) == turnNum) {
-        return {1,currentPossibility.first, currentPossibility.second};
+bool checkForBlock(pair<int, int> currentPossibility, int currentGrid[3][3], bool maximizingBot) {
+    currentGrid[currentPossibility.first][currentPossibility.second] = !maximizingBot + 1;
+    if (checkForWin(currentGrid) == !maximizingBot + 1) {
+        currentGrid[currentPossibility.first][currentPossibility.second] = 0;
+        return true; //{1,currentPossibility.first, currentPossibility.second};
     }
-    return {0};
+    return false; //{0};
 }
 
-int evaluateMove(int grid[3][3], pair<int,int> currentMove, bool maximizingPlayer) {
-    int score = 0;
+int checkForPossibleWin(int grid[3][3], pair<int,int> currentMove, bool maximizingBot) {
+    grid[currentMove.first][currentMove.second] = maximizingBot + 1;
+    if (checkForWin(grid) == maximizingBot + 1) {return true;} else {return false;}
+}
+
+int evaluateMove(int grid[3][3], pair<int,int> currentMove, bool maximizingBot) {
+    int score = 5;
     int playerInFavor;
     int coeff = 1;
-    if (maximizingPlayer) {playerInFavor = 1;} else {playerInFavor = 2; coeff = -1;}
-    if (checkForWin(grid) == playerInFavor) {score = 100;}
-    //2 in row = 10 and 1 in line = 1 else 0
-
+    if (maximizingBot) {playerInFavor = 2;} else {playerInFavor = 1; coeff = -1;}
+    if (checkForPossibleWin(grid, currentMove, maximizingBot)) {score = 100;}
+    if (checkForBlock(currentMove, grid, maximizingBot)) {score = 50;}
+    
+    //For later perhaps: 2 in row = 10; 1 in line = 1; else 0 AND HEATMAP
+    cout<< "EVALUATING: " << score * coeff << endl;
     return score * coeff;
 }
 
-int miniMax(int depth, vector<pair<int,int>> possibilities, bool maximizingPlayer) {
-    if (depth == 0 or possibilities.size() == 0) {
-        return;
+pair<int,pair<int,int>> miniMax(int depth, bool maximizingBot, int currentGrid[3][3], pair<int,int> move = {-1,-1}) {
+    if (depth == 0) {
+        return make_pair(evaluateMove(currentGrid, move, !maximizingBot), move);
     }
-    if  (maximizingPlayer) { //If bots's turn => take highest value (best move for himself)
+    
+    if (move.first != -1 && move.second != -1) { //If there was a move passed on
+        currentGrid[move.first][move.second] = maximizingBot ? 1:2;
+        cout << (maximizingBot ? 1:2) << endl;
+    }
+
+    vector<pair<int,int>> possibilities = getPossibilities(currentGrid); //Get possiblities from currentGrid
+    
+    if  (maximizingBot) { //If bots's turn => take highest value (best move for himself)
         int maxEval = -1000000; //-1 million
+        pair<int,pair<int,int>> result;
+        pair<int,int> bestMove;
         for (int i = 0; i < possibilities.size(); i++) {
-            int eval = miniMax(depth - 1, possibilities, false);
+            int newGrid[3][3];
+            copy(&currentGrid[0][0], &currentGrid[0][0] + 3 * 3, &newGrid[0][0]);
+            
+            result = miniMax(depth - 1, false, newGrid, possibilities[i]);
+            int eval = result.first;
             maxEval = max(maxEval, eval);
+            if (maxEval == eval) {bestMove = result.second;}
         }
-        return maxEval;
+        return make_pair(maxEval,bestMove);
     } else { //If player's turn => takes lowest value (best move for opponent)
         int minEval = +1000000; //+1 million
-        for (int i = 0; possibilities.size(); i++) {
-            int eval = miniMax(depth - 1, possibilities, true);
+        pair<int,pair<int,int>> result;
+        pair<int,int> bestMove;
+        for (int i = 0; i < possibilities.size(); i++) {
+            int newGrid[3][3];
+            copy(&currentGrid[0][0], &currentGrid[0][0] + 3 * 3, &newGrid[0][0]);
+            
+            result = miniMax(depth - 1, true, newGrid, possibilities[i]);
+            int eval = result.first;
             minEval = min(minEval, eval);
+            if (minEval == eval) {bestMove = result.second;}
         }
-        return minEval;
+        return make_pair(minEval,bestMove); //Instead, we should return the best move instead of value
     }
 }
 
 void botTurn() {
-    //cout << "Num of possibilities: " << botPossibilities.size() << endl;
-    //cout << endl << "INDEX : " << index << endl << "COORDINATES: " << botPossibilities[index].first << ", " << botPossibilities[index].second << endl;
-    //pair<int, int> chosenCoordinates = initSearch(2);
-    //grid[chosenCoordinates.first][chosenCoordinates.second] = 2;
+    int gridReplica[3][3] = {{},{},{}};
+    copy(&grid[0][0], &grid[0][0] + 3 * 3, &gridReplica[0][0]); //So that it doesn't affect the actual game
+    
+    pair<int,pair<int,int>> bestMoveValue = miniMax(2, true, gridReplica);
+    cout << endl << "VALUE RETURNED: " << bestMoveValue.first << endl;
+    grid[bestMoveValue.second.first][bestMoveValue.second.second] = 2;
 }
 
 void playerTurn(){ //Handle out of range and already used spaces
-    vector<pair<int,int> > playerPossibilities = getPossibilities();
+    vector<pair<int,int> > playerPossibilities = getPossibilities(grid);
     bool status = false;
-    while (not status) {
+    while (!status) {
         int xCoord, yCoord;
         cout << "Where would you like to place your mark?\nX = ";
         cin >> xCoord;
