@@ -73,12 +73,14 @@ int evaluateMove(int grid[3][3], pair<int,int> currentMove, bool maximizingBot) 
     int score = 5;
     int playerInFavor = maximizingBot ? 2:1;
     int coeff = maximizingBot? 1:-1;
-    cout<< "Player" << playerInFavor << endl;
     if (checkForPossibleWin(grid, currentMove, maximizingBot)) {score = 100;}
-    if (checkForBlock(currentMove, grid, maximizingBot)) {score = 50;}
+    if (checkForBlock(currentMove, grid, maximizingBot) && score != 100) {score = 50;}
     
-    //For later perhaps: 2 in row = 10; 1 in line = 1; else 0 AND HEATMAP
-    cout<< "EVALUATING: " << score * coeff << endl;
+    double heatmap[3][3] = {{1.5,1.2,1.5},{1.2,2,1.2},{1.5,1.2,1.5}};
+    double multiplier = heatmap[currentMove.second][currentMove.first];
+    //For later perhaps: 2 in row = 10; 1 in line = 1; else 0
+    
+    cout<< "EVALUATING: " << score * multiplier * coeff << endl;
     return score * coeff;
 }
 
@@ -104,7 +106,6 @@ pair<int,pair<int,int>> miniMax(int depth, bool maximizingBot, int currentGrid[3
             
             result = miniMax(depth - 1, false, newGrid, possibilities[i]);
             int eval = result.first;
-            //maxEval = max(maxEval, eval);
             if (maxEval < eval) {
                 maxEval = eval;
                 bestMove = possibilities[i];
@@ -121,7 +122,6 @@ pair<int,pair<int,int>> miniMax(int depth, bool maximizingBot, int currentGrid[3
             
             result = miniMax(depth - 1, true, newGrid, possibilities[i]);
             int eval = result.first;
-            //minEval = min(minEval, eval);
             if (minEval > eval) {
                 minEval = eval;
                 bestMove = possibilities[i];
@@ -160,42 +160,33 @@ void playerTurn(){ //Handle out of range and already used spaces
     }
 }
 
+void turn(bool player, int &win) {
+    if (player) {
+        playerTurn();
+    } else {
+        botTurn();
+    }
+    cout << printGrid() << endl;
+        
+    win = checkForWin(grid);
+    if (win == 1) {
+        cout << "You won!" << endl;
+    } 
+    else if (win == 2) {
+        cout << "Bot won!" << endl;
+    }
+    else if (win == 3) {
+        cout << "Tie!" << endl;
+    }
+}
+
 int main() {
     cout << "Tic-Tac-Toe\n" << endl << printGrid() << endl;
     int win = 0;
+    bool playerTurn = true;
     while (win == 0){ //Game loop
-
-        //Player turn
-        playerTurn();
-
-        cout << printGrid() << endl;
-        
-        win = checkForWin(grid);
-        if (win == 1) {
-            cout << "You won!" << endl;
-        } 
-        else if (win == 2) {
-            cout << "Bot won!" << endl;
-        }
-        else if (win == 3) {
-            cout << "Tie!" << endl;
-        }
-
-        //Bot turn
-        botTurn();
-        
-        cout << printGrid() << endl;
-
-        win = checkForWin(grid);
-        if (win == 1) {
-            cout << "You won!" << endl;
-        } 
-        else if (win == 2) {
-            cout << "Bot won!" << endl;
-        }
-        else if (win == 3) {
-            cout << "Tie!" << endl;
-        }
+        turn(playerTurn, win);
+        playerTurn = !playerTurn;
     }
     return 0;
 }
