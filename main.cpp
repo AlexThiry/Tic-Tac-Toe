@@ -59,9 +59,9 @@ bool checkForBlock(pair<int, int> currentPossibility, int currentGrid[3][3], boo
     currentGrid[currentPossibility.first][currentPossibility.second] = !maximizingBot+1; //=> 2 - Bot
     if (checkForWin(currentGrid) == !maximizingBot + 1) {
         currentGrid[currentPossibility.first][currentPossibility.second] = 0;
-        return true; //{1,currentPossibility.first, currentPossibility.second};
+        return true;
     }
-    return false; //{0};
+    return false;
 }
 
 bool checkForPossibleWin(int grid[3][3], pair<int,int> currentMove, bool maximizingBot) {
@@ -77,11 +77,12 @@ int evaluateMove(int grid[3][3], pair<int,int> currentMove, bool maximizingBot) 
     if (checkForBlock(currentMove, grid, maximizingBot) && score != 100) {score = 50;}
     
     double heatmap[3][3] = {{1.5,1.2,1.5},{1.2,2,1.2},{1.5,1.2,1.5}};
-    double multiplier = heatmap[currentMove.second][currentMove.first];
+    double multiplier = 1;
+    if (score == 5){multiplier = heatmap[currentMove.second][currentMove.first];}
     //For later perhaps: 2 in row = 10; 1 in line = 1; else 0
     
-    cout<< "EVALUATING: " << score * multiplier * coeff << endl;
-    return score * coeff;
+    cout<< "EVALUATING: " << score * multiplier * coeff << "\n";
+    return score * multiplier * coeff;
 }
 
 pair<int,pair<int,int>> miniMax(int depth, bool maximizingBot, int currentGrid[3][3], pair<int,int> move = {-1,-1}) { //{Evaluation; (MoveX; MoveY)}
@@ -91,7 +92,7 @@ pair<int,pair<int,int>> miniMax(int depth, bool maximizingBot, int currentGrid[3
     
     if (move.first != -1 && move.second != -1) { //If there was a move passed on
         currentGrid[move.first][move.second] = maximizingBot ? 1:2;
-        cout << (maximizingBot ? 1:2) << endl;
+        cout << (maximizingBot ? 1:2) << "\n";
     }
 
     vector<pair<int,int>> possibilities = getPossibilities(currentGrid); //Get possiblities from currentGrid
@@ -136,7 +137,7 @@ void botTurn() {
     copy(&grid[0][0], &grid[0][0] + 3 * 3, &gridReplica[0][0]); //So that it doesn't affect the actual game
     
     pair<int,pair<int,int>> bestMoveValue = miniMax(2, true, gridReplica);
-    cout << endl << "VALUE RETURNED: " << bestMoveValue.first << endl;
+    cout << "\nVALUE RETURNED: " << bestMoveValue.first << "\n";
     grid[bestMoveValue.second.first][bestMoveValue.second.second] = 2;
 }
 
@@ -166,24 +167,31 @@ void turn(bool player, int &win) {
     } else {
         botTurn();
     }
-    cout << printGrid() << endl;
+    cout << printGrid() << "\n";
         
     win = checkForWin(grid);
     if (win == 1) {
-        cout << "You won!" << endl;
+        cout << "You won!\n";
     } 
     else if (win == 2) {
-        cout << "Bot won!" << endl;
+        cout << "Bot won!\n";
     }
     else if (win == 3) {
-        cout << "Tie!" << endl;
+        cout << "Tie!\n";
     }
 }
 
 int main() {
-    cout << "Tic-Tac-Toe\n" << endl << printGrid() << endl;
-    int win = 0;
+    cout << "Tic-Tac-Toe\n\n" << printGrid() << "\nWould you like to play first? y/n: ";
     bool playerTurn = true;
+    string answer = "_";
+    while (answer != "y" && answer != "n")
+    {
+        cin >> answer;
+    }
+    if (answer == "n") {playerTurn = false;}
+    
+    int win = 0;
     while (win == 0){ //Game loop
         turn(playerTurn, win);
         playerTurn = !playerTurn;
