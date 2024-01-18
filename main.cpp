@@ -16,7 +16,10 @@ string printGrid() { //To get readable string and not memory value
     string printableGrid = "";
     for (int i = 0; i < 3; i++){
         for (int j = 0; j < 3; j++) {
-            printableGrid += to_string(grid[i][j]) + ", ";
+            string toPrint = "_";
+            if (grid[i][j] == 2) {toPrint = "O";} else if(grid[i][j] == 1) {toPrint = "X";}
+            if (j != 2) {toPrint += " | ";} //To avoid extra bar on the side
+            printableGrid += toPrint;
         }
         printableGrid += "\n";
     }
@@ -74,7 +77,7 @@ int evaluateMove(int grid[3][3], pair<int,int> currentMove, bool maximizingBot) 
     int playerInFavor = maximizingBot ? 2:1;
     int coeff = maximizingBot? 1:-1;
     if (checkForPossibleWin(grid, currentMove, maximizingBot)) {score = 100;}
-    if (checkForBlock(currentMove, grid, maximizingBot) && score != 100) {score = 50;}
+    if (checkForBlock(currentMove, grid, maximizingBot) && score != 100) {score = 1;}
     
     double heatmap[3][3] = {{1.5,1.2,1.5},{1.2,2,1.2},{1.5,1.2,1.5}};
     double multiplier = 1;
@@ -92,7 +95,6 @@ pair<int,pair<int,int>> miniMax(int depth, bool maximizingBot, int currentGrid[3
     
     if (move.first != -1 && move.second != -1) { //If there was a move passed on
         currentGrid[move.first][move.second] = maximizingBot ? 1:2;
-        cout << (maximizingBot ? 1:2) << "\n";
     }
 
     vector<pair<int,int>> possibilities = getPossibilities(currentGrid); //Get possiblities from currentGrid
