@@ -186,17 +186,22 @@ void turn(bool player, int &win) {
 int main() {
     cout << "Tic-Tac-Toe\n\n" << printGrid() << "\nWould you like to play first? y/n: ";
     bool playerTurn = true;
+    bool bvb = false;
     string answer = "_";
-    while (answer != "y" && answer != "n")
+    while (answer != "y" && answer != "n" && answer != "bvb")
     {
         cin >> answer;
     }
-    if (answer == "n") {playerTurn = false;}
-    
+    if (answer == "n") {playerTurn = false;} else if (answer == "bvb") {playerTurn = false; bvb = true;}
+
     int win = 0;
     while (win == 0){ //Game loop
-        turn(playerTurn, win);
-        playerTurn = !playerTurn;
+        if (bvb) {
+            turn(false, win);
+        } else {
+            turn(playerTurn, win);
+            playerTurn = !playerTurn;
+        }
     }
     return 0;
 }
