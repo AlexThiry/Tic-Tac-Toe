@@ -72,12 +72,15 @@ bool checkForPossibleWin(int grid[3][3], pair<int,int> currentMove, bool maximiz
     if (checkForWin(grid) == maximizingBot + 1) {return true;} else {return false;}
 }
 
-int evaluateMove(int grid[3][3], pair<int,int> currentMove, bool maximizingBot) {
+int evaluateMove(int grid[3][3], pair<int,int> currentMove, bool maximizingBot, int numberToPlay) {
     int score = 5;
-    int playerInFavor = maximizingBot ? 2:1;
-    int coeff = maximizingBot? 1:-1;
-    if (checkForPossibleWin(grid, currentMove, maximizingBot)) {score = 100;}
-    if (checkForBlock(currentMove, grid, maximizingBot) && score != 100) {score = 1;}
+    int playerInFavor;
+    int coeff;
+
+    if (numberToPlay == 2) {playerInFavor = maximizingBot ? 2:1; coeff = maximizingBot? 1:-1;} else {playerInFavor = maximizingBot ? 1:2; coeff = maximizingBot? -1:1;}
+    int toCheck = numberToPlay == 2 ? maximizingBot : !maximizingBot; //Used for bvb
+    if (checkForPossibleWin(grid, currentMove, toCheck)) {score = 100;}
+    if (checkForBlock(currentMove, grid, toCheck) && score != 100) {score = 1;}
     
     double heatmap[3][3] = {{1.5,1.2,1.5},{1.2,2,1.2},{1.5,1.2,1.5}};
     double multiplier = 1;
@@ -88,44 +91,50 @@ int evaluateMove(int grid[3][3], pair<int,int> currentMove, bool maximizingBot) 
     return score * multiplier * coeff;
 }
 
-pair<int,pair<int,int>> miniMax(int depth, bool maximizingBot, int currentGrid[3][3], pair<int,int> move = {-1,-1}) { //{Evaluation; (MoveX; MoveY)}
+pair<int,pair<int,int>> miniMax(int depth, bool maximizingBot, int currentGrid[3][3], int numberToPlay = 2, pair<int,int> move = {-1,-1}) { //{Evaluation; (MoveX; MoveY)}
     if (depth == 0) {
-        return make_pair(evaluateMove(currentGrid, move, !maximizingBot), move);
+        return make_pair(evaluateMove(currentGrid, move, !maximizingBot, numberToPlay), move);
     }
     
     if (move.first != -1 && move.second != -1) { //If there was a move passed on
-        currentGrid[move.first][move.second] = maximizingBot ? 1:2;
+        if (numberToPlay == 2) {currentGrid[move.first][move.second] = maximizingBot ? 1:2;} else {currentGrid[move.first][move.second] = maximizingBot ? 2:1;}
     }
 
     vector<pair<int,int>> possibilities = getPossibilities(currentGrid); //Get possiblities from currentGrid
     
     if  (maximizingBot) { //If bots's turn => take highest value (best move for himself)
-        int maxEval = -1000000; //-1 million
+        int maxEval = numberToPlay == 2 ? -1000000:1000000; //-1 million
         pair<int,pair<int,int>> result;
         pair<int,int> bestMove;
         for (int i = 0; i < possibilities.size(); i++) {
             int newGrid[3][3];
             copy(&currentGrid[0][0], &currentGrid[0][0] + 3 * 3, &newGrid[0][0]);
             
-            result = miniMax(depth - 1, false, newGrid, possibilities[i]);
+            result = miniMax(depth - 1, false, newGrid, numberToPlay, possibilities[i]);
             int eval = result.first;
-            if (maxEval < eval) {
+            if (maxEval < eval && numberToPlay == 2) {
+                maxEval = eval;
+                bestMove = possibilities[i];
+            } else if (maxEval > eval && numberToPlay == 1){
                 maxEval = eval;
                 bestMove = possibilities[i];
             }
         }
         return make_pair(maxEval,bestMove);
     } else { //If player's turn => takes lowest value (best move for opponent)
-        int minEval = 1000000; //+1 million
+        int minEval = numberToPlay == 2 ? 1000000:-1000000; //+1 million
         pair<int,pair<int,int>> result;
         pair<int,int> bestMove;
         for (int i = 0; i < possibilities.size(); i++) {
             int newGrid[3][3];
             copy(&currentGrid[0][0], &currentGrid[0][0] + 3 * 3, &newGrid[0][0]);
             
-            result = miniMax(depth - 1, true, newGrid, possibilities[i]);
+            result = miniMax(depth - 1, true, newGrid, numberToPlay, possibilities[i]);
             int eval = result.first;
             if (minEval > eval) {
+                minEval = eval;
+                bestMove = possibilities[i];
+            } else if (minEval < eval && numberToPlay == 1){
                 minEval = eval;
                 bestMove = possibilities[i];
             }
@@ -134,13 +143,13 @@ pair<int,pair<int,int>> miniMax(int depth, bool maximizingBot, int currentGrid[3
     }
 }
 
-void botTurn() {
+void botTurn(int numberToPlay) {
     int gridReplica[3][3] = {{},{},{}};
     copy(&grid[0][0], &grid[0][0] + 3 * 3, &gridReplica[0][0]); //So that it doesn't affect the actual game
     
-    pair<int,pair<int,int>> bestMoveValue = miniMax(2, true, gridReplica);
+    pair<int,pair<int,int>> bestMoveValue = miniMax(2, true, gridReplica, numberToPlay);
     cout << "\nVALUE RETURNED: " << bestMoveValue.first << "\n";
-    grid[bestMoveValue.second.first][bestMoveValue.second.second] = 2;
+    grid[bestMoveValue.second.first][bestMoveValue.second.second] = numberToPlay;
 }
 
 void playerTurn(){ //Handle out of range and already used spaces
@@ -163,11 +172,11 @@ void playerTurn(){ //Handle out of range and already used spaces
     }
 }
 
-void turn(bool player, int &win) {
+void turn(bool player, int &win, int botNumber) {
     if (player) {
         playerTurn();
     } else {
-        botTurn();
+        botTurn(botNumber);
     }
     cout << printGrid() << "\n";
         
@@ -195,11 +204,13 @@ int main() {
     if (answer == "n") {playerTurn = false;} else if (answer == "bvb") {playerTurn = false; bvb = true;}
 
     int win = 0;
+    int botPlaysAs = 2;
     while (win == 0){ //Game loop
         if (bvb) {
-            turn(false, win);
+            turn(false, win, botPlaysAs); //Issue => bots play as one (together)
+            botPlaysAs = botPlaysAs == 2 ? 1:2;
         } else {
-            turn(playerTurn, win);
+            turn(playerTurn, win, 2);
             playerTurn = !playerTurn;
         }
     }
